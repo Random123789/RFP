@@ -12,7 +12,7 @@ conn = psycopg2.connect(
 cursor = conn.cursor()
 
 # Read your Excel file
-df = pd.read_excel('your_qna_file.xlsx', header=None)  # or use pd.read_csv() for CSV
+df = pd.read_excel('RFP testing.xlsx', header=None)  # or use pd.read_csv() for CSV
 
 # Insert each Q&A pair, skip if exact match exists
 inserted = 0

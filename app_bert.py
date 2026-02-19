@@ -9,7 +9,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import requests
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -108,65 +107,41 @@ def find_top_matches(user_query, qna_dict, session_id=None, top_k=3):
     return matches
 
 def generate_response(prompt, conversation_history, file_content, session_id=None):
-    # For Q&A data, use BERT search + deterministic structure + optional LLM tone rewrite
-    if file_content.strip().startswith("Data:"):
-        qna_dict = fetch_qna_from_db()  # Fetch from DB instead
-        top_matches = find_top_matches(prompt, qna_dict, session_id, top_k=3)
-        
-        if not top_matches:
-            return "No relevant Q&A pairs found in the database. Try rephrasing your question."
-        
-        # Always return best match (highest score) - deterministic structure
-        best_match = top_matches[0]
-        confidence_pct = round(best_match['score'] * 100, 1)
+    # Always try to fetch from database first
+    try:
+        qna_dict = fetch_qna_from_db()
+        if qna_dict:  # If database has Q&A pairs, use them
+            top_matches = find_top_matches(prompt, qna_dict, session_id, top_k=3)
+            
+            if not top_matches:
+                return "No relevant Q&A pairs found in the database. Try rephrasing your question."
+            
+            # Always return best match (highest score) - deterministic structure
+            best_match = top_matches[0]
+            confidence_pct = round(best_match['score'] * 100, 1)
 
-        # Build response with best answer and related answers
-        response = f"""<span style="color: green;">
+            # Build response with best answer and related answers
+            response = f"""<span style="color: green;">
 **🟢 BEST ANSWER:** {best_match['answer']}
 
 **Source Q:** {best_match['question']}
 **Confidence:** {confidence_pct}%
 </span>"""
 
-        # If there are related answers, add them with clear spacing
-        if len(top_matches) > 1:
-            related = "\n\n---\n\n**RELATED ANSWERS:**\n"
-            for i, match in enumerate(top_matches[1:], 1):
-                conf = round(match['score'] * 100, 1)
-                related += f"\n**Related {i}** ({conf}% match)\n**Q:** {match['question']}\n**A:** {match['answer']}\n"
-            response += related
+            # If there are related answers, add them with clear spacing
+            if len(top_matches) > 1:
+                related = "\n\n---\n\n**RELATED ANSWERS:**\n"
+                for i, match in enumerate(top_matches[1:], 1):
+                    conf = round(match['score'] * 100, 1)
+                    related += f"\n**Related {i}** ({conf}% match)\n**Q:** {match['question']}\n**A:** {match['answer']}\n"
+                response += related
 
-        return response
-    
-    # For other documents, use TinyLlama
-    if not file_content:
-        return "Please upload a document first."
-    
-    system_prompt = """You are a Q&A assistant that answers questions based on the provided document. 
-You must:
-- Only use information from the provided document
-- Never use your training data or outside knowledge
-- If the answer is not in the document, explicitly say so
-- Provide thorough, detailed answers"""
-    
-    full_prompt = f"{system_prompt}\n\nDocument:\n{file_content}\n\nQuestion: {prompt}\n\nAnswer (only from document, thorough and detailed):"
-    url = 'http://localhost:11434/v1/completions'
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        'prompt': full_prompt,
-        'model': 'tinyllama',
-        'max_tokens': 4096,
-        'temperature': 0.3,
-        'stream': False
-    }
-    try:
-        response = requests.post(url, headers=headers, json=data, timeout=90)
-        if response.status_code == 200:
-            return response.json()['choices'][0]['text'].strip()
-        else:
-            return f"Error: {response.status_code}"
+            return response
     except Exception as e:
-        return f"Error: {str(e)[:100]}"
+        pass
+    
+    # For non-Q&A documents, this app only supports Q&A database queries
+    return "This app currently only supports Q&A database queries. Please ensure your data is loaded in the PostgreSQL database."
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'txt', 'md', 'py', 'js', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'csv'}
