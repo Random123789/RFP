@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageElement.appendChild(button);
         }
         chatHistory.appendChild(messageElement);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+        //chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
     function updateChatHistory(fullHistory, noMatchOptions = {}) {
