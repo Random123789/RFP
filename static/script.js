@@ -493,7 +493,28 @@ document.addEventListener('DOMContentLoaded', () => {
             messageElement.appendChild(button);
         }
         chatHistory.appendChild(messageElement);
-        scrollToBottom();
+        if (sender === 'You' || sender === 'AI' || sender === 'ML') {
+            scrollToLatestUserMessage();
+        } else {
+            scrollToBottom();
+        }
+    }
+
+    function scrollToLatestUserMessage() {
+        if (!chatHistory) {
+            return;
+        }
+
+        const userMessages = chatHistory.querySelectorAll('.you-message');
+        if (userMessages.length === 0) {
+            scrollToBottom();
+            return;
+        }
+
+        const latestUserMessage = userMessages[userMessages.length - 1];
+        requestAnimationFrame(() => {
+            latestUserMessage.scrollIntoView({ block: 'start' });
+        });
     }
 
     function scrollToBottom() {
@@ -523,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage('System', message.substring(8));
             }
         });
-        scrollToBottom();
+        scrollToLatestUserMessage();
         saveChatHistory();
     }
 
@@ -569,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedHistory = localStorage.getItem('chatHistory');
         if (savedHistory) {
             chatHistory.innerHTML = savedHistory;
-            scrollToBottom();
+            scrollToLatestUserMessage();
         }
     }
 
