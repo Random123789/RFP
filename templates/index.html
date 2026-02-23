@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local AI Chat with Notes</title>
+    <title>RFP Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -20,17 +20,17 @@
 
     <header class="hero">
         <div class="hero-copy">
-            <span class="eyebrow">Private, local-first assistant</span>
-            <h1>Chat with your notes, without the cloud.</h1>
-            <p class="tagline">Drop in documents, ask questions, and keep everything on your device.</p>
+            <span class="eyebrow">Smart query assistant with autocomplete</span>
+            <h1>Query your knowledge base with intelligent suggestions.</h1>
+            <p class="tagline">Get autocomplete suggestions and grounded answers from your compiled database.</p>
             <div class="hero-stats">
                 <div>
-                    <span class="stat-value">100% Local</span>
-                    <span class="stat-label">No external storage</span>
+                    <span class="stat-value">Smart Autocomplete</span>
+                    <span class="stat-label">AI-powered suggestions</span>
                 </div>
                 <div>
-                    <span class="stat-value">Multi-file</span>
-                    <span class="stat-label">Combine sources</span>
+                    <span class="stat-value">Semantic Search</span>
+                    <span class="stat-label">Intelligent matching</span>
                 </div>
                 <div>
                     <span class="stat-value">Instant</span>
@@ -44,67 +44,23 @@
                 <span class="status-dot">Live</span>
             </div>
             <div class="hero-card-body">
-                <p><strong>Tip:</strong> Upload a Q&A spreadsheet to enable semantic matching.</p>
+                <p><strong>How it works:</strong> Your knowledge base has been prepared and loaded into the database. As you type, intelligent autocomplete suggestions help you refine your queries.</p>
                 <ul>
-                    <li>PDF, CSV, XLSX, Markdown, code</li>
-                    <li>Drag & drop multiple files</li>
-                    <li>Remove files before upload</li>
+                    <li>Smart autocomplete suggestions</li>
+                    <li>Semantic search capabilities</li>
+                    <li>Full conversation history</li>
                 </ul>
             </div>
         </div>
     </header>
 
     <main>
-        <section id="uploadSection" class="section upload-panel">
-            <div class="section-header">
-                <div>
-                    <h2>Upload your sources</h2>
-                    <p class="section-subtitle">Everything stays local. Add more than one file for a richer answer.</p>
-                </div>
-                <div class="section-badge">Step 1</div>
-            </div>
-            <div id="dropZone" class="drop-zone">
-                <div class="drop-copy">
-                    <p>Drag & drop files here</p>
-                    <span>or select from your device</span>
-                </div>
-                <form id="uploadForm">
-                    <div class="file-input-wrapper">
-                        <input type="file" id="fileInput" name="file" multiple>
-                        <label for="fileInput" id="fileLabel">Choose files</label>
-                    </div>
-                    <button type="submit" id="uploadButton">Upload</button>
-                </form>
-                <div class="file-list-header">Selected files</div>
-                <div id="fileList" class="file-list"></div>
-                <div class="file-actions">
-                    <button type="button" id="clearSelection" class="secondary-button">Clear selection</button>
-                    <span id="fileHint" class="file-hint">No files selected.</span>
-                </div>
-                <div id="pendingNote" class="pending-note" style="display: none;">
-                    Selection changed. Click Upload to update the document.
-                </div>
-            </div>
-        </section>
-
-        <section id="fileContentSection" class="section review-panel">
-            <div class="section-header">
-                <div>
-                    <h2>Preview the combined document</h2>
-                    <p class="section-subtitle">Check the merged content before asking questions.</p>
-                </div>
-                <div class="section-badge">Step 2</div>
-            </div>
-            <div id="fileContent" class="content-box"></div>
-        </section>
-
         <section id="chatSection" class="section chat-panel">
             <div class="section-header">
                 <div>
-                    <h2>Ask anything about your notes</h2>
-                    <p class="section-subtitle">Get grounded answers, fully offline.</p>
+                    <h2>Ask anything about your knowledge base</h2>
+                    <p class="section-subtitle">Use autocomplete suggestions to explore and get instant answers from your database.</p>
                 </div>
-                <div class="section-badge">Step 3</div>
             </div>
             <div id="chatHistory" class="content-box"></div>
             <form id="chatForm" class="chat-form">

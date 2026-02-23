@@ -1,35 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const uploadForm = document.getElementById('uploadForm');
-    const fileInput = document.getElementById('fileInput');
-    const uploadButton = document.getElementById('uploadButton');
-    const fileContent = document.getElementById('fileContent');
     const chatForm = document.getElementById('chatForm');
     const userInput = document.getElementById('userInput');
     const chatHistory = document.getElementById('chatHistory');
     const exportChatButton = document.getElementById('exportChat');
     const clearChatButton = document.getElementById('clearChat');
     const clearAllButton = document.getElementById('clearAll');
-    const dropZone = document.getElementById('dropZone');
     const spinner = document.getElementById('spinner');
-    const fileList = document.getElementById('fileList');
-    const clearSelectionButton = document.getElementById('clearSelection');
-    const fileHint = document.getElementById('fileHint');
-    const pendingNote = document.getElementById('pendingNote');
     const autocompleteContainer = document.getElementById('autocompleteContainer');
     const autocompleteList = document.getElementById('autocompleteList');
     const sendButton = chatForm.querySelector('button[type="submit"]');
     
     let lastNoMatchQuestion = '';
     let lastNoMatchMessage = '';
-    let selectedFiles = [];
-    let lastUploadedKeys = new Set();
-    let hasUploaded = false;
     let isGenerating = false;
     let chatAbortController = null;
     let debounceTimer = null;
     let selectedSuggestionIndex = -1;
-
-    const allowedFileTypes = ['.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.pdf', '.xlsx', '.xls', '.csv'];
 
     // Create loading overlay
     const loadingOverlay = document.createElement('div');
@@ -210,194 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load chat history from local storage
     loadChatHistory();
 
-    // Load file content from local storage
-    loadFileContent();
-
-    fileInput.addEventListener('change', handleFileSelect);
-
-    // Drag and drop functionality
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        const files = Array.from(e.dataTransfer.files || []);
-        addFilesToSelection(files);
-    });
-
-    function handleFileSelect(e) {
-        const files = Array.from(e.target.files || []);
-        addFilesToSelection(files);
-    }
-
-    function fileKey(file) {
-        return `${file.name}|${file.size}|${file.lastModified}`;
-    }
-
-    function isAllowedFile(file) {
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-        return allowedFileTypes.includes(fileExtension);
-    }
-
-    function updateFileInputFromSelection() {
-        const dataTransfer = new DataTransfer();
-        selectedFiles.forEach((file) => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-    }
-
-    function updateUploadUi() {
-        if (selectedFiles.length === 0) {
-            uploadButton.textContent = 'Upload';
-            uploadButton.disabled = true;
-            fileHint.textContent = 'No files selected.';
-            return;
-        }
-
-        uploadButton.textContent = selectedFiles.length === 1
-            ? 'Upload ' + selectedFiles[0].name
-            : 'Upload ' + selectedFiles.length + ' files';
-        uploadButton.disabled = false;
-        fileHint.textContent = selectedFiles.length + ' file(s) selected.';
-    }
-
-    function renderFileList() {
-        fileList.innerHTML = '';
-        if (selectedFiles.length === 0) {
-            updateUploadUi();
-            updatePendingNote();
-            return;
-        }
-
-        selectedFiles.forEach((file) => {
-            const chip = document.createElement('div');
-            chip.className = 'file-chip';
-            chip.textContent = file.name;
-
-            const removeButton = document.createElement('button');
-            removeButton.type = 'button';
-            removeButton.className = 'remove-file';
-            removeButton.textContent = 'Remove';
-            removeButton.addEventListener('click', () => {
-                removeFileFromSelection(fileKey(file));
-            });
-
-            chip.appendChild(removeButton);
-            fileList.appendChild(chip);
-        });
-
-        updateUploadUi();
-        updatePendingNote();
-    }
-
-    function addFilesToSelection(files) {
-        if (!files.length) {
-            return;
-        }
-
-        const invalidFiles = files.filter((file) => !isAllowedFile(file));
-        if (invalidFiles.length > 0) {
-            alert('Invalid file type(s): ' + invalidFiles.map((file) => file.name).join(', '));
-        }
-
-        const allowedFiles = files.filter((file) => isAllowedFile(file));
-        const existingKeys = new Set(selectedFiles.map(fileKey));
-        allowedFiles.forEach((file) => {
-            const key = fileKey(file);
-            if (!existingKeys.has(key)) {
-                selectedFiles.push(file);
-                existingKeys.add(key);
-            }
-        });
-
-        updateFileInputFromSelection();
-        renderFileList();
-    }
-
-    function removeFileFromSelection(keyToRemove) {
-        selectedFiles = selectedFiles.filter((file) => fileKey(file) !== keyToRemove);
-        updateFileInputFromSelection();
-        renderFileList();
-    }
-
-    function setsEqual(a, b) {
-        if (a.size !== b.size) {
-            return false;
-        }
-        for (const item of a) {
-            if (!b.has(item)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    function updatePendingNote() {
-        if (!hasUploaded) {
-            pendingNote.style.display = 'none';
-            return;
-        }
-
-        const currentKeys = new Set(selectedFiles.map(fileKey));
-        pendingNote.style.display = setsEqual(currentKeys, lastUploadedKeys) ? 'none' : 'block';
-    }
-
-    uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (selectedFiles.length === 0) {
-            alert('Please select at least one file to upload.');
-            return;
-        }
-
-        const formData = new FormData();
-        selectedFiles.forEach((file) => formData.append('file', file));
-
-        // Check if there's existing chat history
-        if (chatHistory.innerHTML.trim() !== '') {
-            const userChoice = await showUploadConfirmation();
-            if (userChoice === 'cancel') {
-                return;
-            }
-            formData.append('action', userChoice);
-        } else {
-            formData.append('action', 'upload');
-        }
-
-        try {
-            setLoading(true);
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            if (data.error) {
-                alert(`Error: ${data.error}`);
-                fileContent.textContent = '';
-            } else {
-                fileContent.textContent = data.content;
-                localStorage.setItem('fileContent', data.content); // Store file content in localStorage
-                hasUploaded = true;
-                lastUploadedKeys = new Set(selectedFiles.map(fileKey));
-                updatePendingNote();
-                if (data.chatHistory) {
-                    updateChatHistory(data.chatHistory);
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred while uploading the file.');
-            fileContent.textContent = '';
-        } finally {
-            setLoading(false);
-        }
-    });
-
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (isGenerating) {
@@ -451,36 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
             chatAbortController = null;
         }
     });
-
-    function showUploadConfirmation() {
-        return new Promise((resolve) => {
-            const confirmationDialog = document.createElement('div');
-            confirmationDialog.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-                    <div style="background: white; padding: 20px; border-radius: 5px; text-align: center; box-shadow: 0 16px 40px rgba(15,23,42,0.25);">
-                        <p>You have an existing chat history. What would you like to do?</p>
-                        <button id="clearChatBtn">Clear chat and upload</button>
-                        <button id="keepChatBtn">Keep chat and upload</button>
-                        <button id="cancelUploadBtn">Cancel upload</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(confirmationDialog);
-
-            document.getElementById('clearChatBtn').onclick = () => {
-                document.body.removeChild(confirmationDialog);
-                resolve('clear');
-            };
-            document.getElementById('keepChatBtn').onclick = () => {
-                document.body.removeChild(confirmationDialog);
-                resolve('keep');
-            };
-            document.getElementById('cancelUploadBtn').onclick = () => {
-                document.body.removeChild(confirmationDialog);
-                resolve('cancel');
-            };
-        });
-    }
 
     function appendMessage(sender, message, options = {}) {
         const messageElement = document.createElement('div');
@@ -594,13 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function loadFileContent() {
-        const savedFileContent = localStorage.getItem('fileContent');
-        if (savedFileContent) {
-            fileContent.textContent = savedFileContent;
-        }
-    }
-
     async function clearChat() {
         try {
             setLoading(true);
@@ -640,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Failed to clear all data');
             }
             chatHistory.innerHTML = '';
-            fileContent.textContent = '';
             localStorage.clear();
             // Force a hard reload of the page to clear any cached data
             window.location.reload(true);
@@ -677,11 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    clearSelectionButton.addEventListener('click', () => {
-        selectedFiles = [];
-        updateFileInputFromSelection();
-        renderFileList();
-    });
+    // Scroll to top after everything is loaded
+    window.scrollTo(0, 0);
 
-    updateUploadUi();
 });
