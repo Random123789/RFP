@@ -471,21 +471,6 @@
         font-size: 0.95rem;
     }
 
-    .autocomplete-item-answer {
-        font-size: 0.85rem;
-        color: var(--ink-muted);
-        margin-top: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .autocomplete-item-score {
-        font-size: 0.8rem;
-        color: #22c55e;
-        margin-top: 4px;
-    }
-
     #sendButton {
         height: 44px;
         padding: 0 24px;

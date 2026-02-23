@@ -298,10 +298,9 @@ def autocomplete():
             question = row['question']
             # Use token_set_ratio for better matching with partial strings
             score = fuzz.token_set_ratio(query.lower(), question.lower())
-            if score > 40:  # Only include matches above 40% similarity
+            if score > 30:  # Only include matches above 30% similarity
                 matches.append({
                     'question': question,
-                    'answer': row['answer'],
                     'score': score
                 })
         
