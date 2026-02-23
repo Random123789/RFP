@@ -9,6 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from rapidfuzz import fuzz
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -273,6 +274,48 @@ def clear_all():
         qna_embeddings_cache.pop(session_id, None)
     session.clear()
     return jsonify({'status': 'success', 'message': 'All data cleared'})
+
+@app.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    """Autocomplete endpoint with fuzzy search through Q&A database"""
+    query = request.args.get('q', '').strip()
+    limit = request.args.get('limit', 10, type=int)
+    
+    if not query or len(query) < 1:
+        return jsonify({'suggestions': []})
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT question, answer FROM qna_pairs LIMIT 500")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Perform fuzzy matching on questions
+        matches = []
+        for row in rows:
+            question = row['question']
+            # Use token_set_ratio for better matching with partial strings
+            score = fuzz.token_set_ratio(query.lower(), question.lower())
+            if score > 40:  # Only include matches above 40% similarity
+                matches.append({
+                    'question': question,
+                    'answer': row['answer'],
+                    'score': score
+                })
+        
+        # Sort by score descending and limit results
+        matches.sort(key=lambda x: x['score'], reverse=True)
+        suggestions = matches[:limit]
+        
+        return jsonify({'suggestions': suggestions})
+    except psycopg2.OperationalError:
+        # Database is offline - return empty suggestions without error logging
+        return jsonify({'suggestions': []})
+    except Exception as e:
+        print(f"Autocomplete error: {str(e)}")
+        return jsonify({'suggestions': []})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -108,7 +108,12 @@
             </div>
             <div id="chatHistory" class="content-box"></div>
             <form id="chatForm" class="chat-form">
-                <input type="text" id="userInput" placeholder="Ask a question about your files...">
+                <div class="input-wrapper">
+                    <input type="text" id="userInput" placeholder="Ask a question about your files...">
+                    <div id="autocompleteContainer" class="autocomplete-container" style="display: none;">
+                        <ul id="autocompleteList" class="autocomplete-list"></ul>
+                    </div>
+                </div>
                 <button type="submit" id="sendButton">Send</button>
             </form>
             <div class="chat-controls">

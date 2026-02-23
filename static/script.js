@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearSelectionButton = document.getElementById('clearSelection');
     const fileHint = document.getElementById('fileHint');
     const pendingNote = document.getElementById('pendingNote');
+    const autocompleteContainer = document.getElementById('autocompleteContainer');
+    const autocompleteList = document.getElementById('autocompleteList');
+    
     let lastNoMatchQuestion = '';
     let lastNoMatchMessage = '';
     let selectedFiles = [];
@@ -22,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let hasUploaded = false;
     let isGenerating = false;
     let chatAbortController = null;
+    let debounceTimer = null;
+    let selectedSuggestionIndex = -1;
 
     const allowedFileTypes = ['.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.pdf', '.xlsx', '.xls', '.csv'];
 
@@ -51,6 +56,157 @@ document.addEventListener('DOMContentLoaded', () => {
             sendButton.classList.remove('stop-button');
         }
     }
+
+    // Debounce function for autocomplete
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func(...args), delay);
+        };
+    }
+
+    // Fetch autocomplete suggestions
+    async function fetchAutocompleteSuggestions(query) {
+        if (!query || query.length < 1) {
+            hideAutocomplete();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/autocomplete?q=${encodeURIComponent(query)}&limit=8`);
+            const data = await response.json();
+            
+            if (data.suggestions && data.suggestions.length > 0) {
+                showAutocomplete(data.suggestions);
+            } else {
+                hideAutocomplete();
+            }
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+            hideAutocomplete();
+        }
+    }
+
+    // Show autocomplete dropdown
+    function showAutocomplete(suggestions) {
+        autocompleteList.innerHTML = '';
+        selectedSuggestionIndex = -1;
+
+        suggestions.forEach((suggestion, index) => {
+            const li = document.createElement('li');
+            li.className = 'autocomplete-item';
+            li.innerHTML = `
+                <div class="autocomplete-item-question">${escapedText(suggestion.question)}</div>
+                <div class="autocomplete-item-answer">${escapedText(suggestion.answer)}</div>
+                <div class="autocomplete-item-score">Match: ${suggestion.score}%</div>
+            `;
+            
+            li.addEventListener('click', () => {
+                selectSuggestion(suggestion);
+            });
+
+            li.addEventListener('mouseenter', () => {
+                setActiveSuggestion(index);
+            });
+
+            autocompleteList.appendChild(li);
+        });
+
+        autocompleteContainer.style.display = 'block';
+    }
+
+    // Hide autocomplete dropdown
+    function hideAutocomplete() {
+        autocompleteContainer.style.display = 'none';
+        selectedSuggestionIndex = -1;
+    }
+
+    // Set active suggestion
+    function setActiveSuggestion(index) {
+        const items = autocompleteList.querySelectorAll('.autocomplete-item');
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('active');
+                selectedSuggestionIndex = index;
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    // Select a suggestion
+    function selectSuggestion(suggestion) {
+        userInput.value = suggestion.question;
+        hideAutocomplete();
+        // Optionally auto-submit the form
+        // chatForm.dispatchEvent(new Event('submit'));
+    }
+
+    // Escape HTML text to prevent XSS
+    function escapedText(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Debounced autocomplete event handler
+    const handleAutocompleteInput = debounce((e) => {
+        const query = e.target.value.trim();
+        fetchAutocompleteSuggestions(query);
+    }, 200);
+
+    // Input event listener for autocomplete
+    userInput.addEventListener('input', handleAutocompleteInput);
+
+    // Keyboard navigation for autocomplete
+    userInput.addEventListener('keydown', (e) => {
+        const items = autocompleteList.querySelectorAll('.autocomplete-item');
+        const itemCount = items.length;
+
+        if (itemCount === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (selectedSuggestionIndex < itemCount - 1) {
+                    setActiveSuggestion(selectedSuggestionIndex + 1);
+                    items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (selectedSuggestionIndex > 0) {
+                    setActiveSuggestion(selectedSuggestionIndex - 1);
+                    items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                }
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedSuggestionIndex >= 0) {
+                    items[selectedSuggestionIndex].click();
+                } else if (userInput.value.trim()) {
+                    // Submit form if no suggestion selected but input has text
+                    chatForm.dispatchEvent(new Event('submit'));
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                hideAutocomplete();
+                break;
+        }
+    });
+
+    // Hide autocomplete when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!userInput.contains(e.target) && !autocompleteContainer.contains(e.target)) {
+            hideAutocomplete();
+        }
+    });
+
+    // Hide autocomplete when form is submitted
+    chatForm.addEventListener('submit', () => {
+        hideAutocomplete();
+    });
 
     // Load chat history from local storage
     loadChatHistory();

@@ -360,6 +360,12 @@
         background: #ffffff;
     }
 
+    input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(42, 47, 143, 0.1);
+    }
+
     button {
         background-color: var(--primary-color);
         color: white;
@@ -415,6 +421,69 @@
         align-items: center;
         gap: 12px;
         margin-top: 20px;
+    }
+
+    .input-wrapper {
+        position: relative;
+        flex: 1;
+    }
+
+    .autocomplete-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-top: none;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+        z-index: 1000;
+    }
+
+    .autocomplete-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .autocomplete-item {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        transition: background-color var(--transition);
+    }
+
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.active {
+        background-color: #f0f4ff;
+    }
+
+    .autocomplete-item-question {
+        font-weight: 600;
+        color: var(--ink-strong);
+        font-size: 0.95rem;
+    }
+
+    .autocomplete-item-answer {
+        font-size: 0.85rem;
+        color: var(--ink-muted);
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .autocomplete-item-score {
+        font-size: 0.8rem;
+        color: #22c55e;
+        margin-top: 4px;
     }
 
     #sendButton {
@@ -578,5 +647,13 @@
 
         #sendButton {
             width: 100%;
+        }
+
+        .input-wrapper {
+            width: 100%;
+        }
+
+        .autocomplete-container {
+            max-height: 250px;
         }
     }
