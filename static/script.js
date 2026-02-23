@@ -98,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
             li.className = 'autocomplete-item';
             li.innerHTML = `
                 <div class="autocomplete-item-question">${escapedText(suggestion.question)}</div>
-                <div class="autocomplete-item-answer">${escapedText(suggestion.answer)}</div>
             `;
             
             li.addEventListener('click', () => {
