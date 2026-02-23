@@ -292,22 +292,18 @@ def autocomplete():
         cursor.close()
         conn.close()
         
-        # Perform fuzzy matching on questions
+        # Perform simple substring matching on questions
         matches = []
         for row in rows:
             question = row['question']
             answer = row['answer']
-            # Use token_set_ratio for better matching with partial strings
-            score = fuzz.token_set_ratio(query.lower(), question.lower())
-            if score > 30:  # Only include matches above 30% similarity
+            if query.lower() in question.lower():
                 matches.append({
                     'question': question,
-                    'answer': answer,
-                    'score': score
+                    'answer': answer
                 })
         
-        # Sort by score descending and limit results
-        matches.sort(key=lambda x: x['score'], reverse=True)
+        # Keep original order and limit results
         suggestions = matches[:limit]
         
         return jsonify({'suggestions': suggestions})

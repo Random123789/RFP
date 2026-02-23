@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
             li.innerHTML = `
                 <div class="autocomplete-item-question">${escapedText(suggestion.question)}</div>
                 <div class="autocomplete-item-answer">${escapedText(suggestion.answer)}</div>
-                <div class="autocomplete-item-score">Match: ${suggestion.score}%</div>
             `;
             
             li.addEventListener('click', () => {
