@@ -1,5 +1,8 @@
 # README1 — Excel Q&A Usage (app_bert.py)
 
+The app parses the Excel into question–answer pairs, embeds the questions using a BERT-based sentence model, converts the user’s query into the same vector space, and uses cosine similarity to retrieve the most semantically similar question and its answer.
+
+
 This guide explains how to run [app_bert.py](app_bert.py) and use Excel/CSV files for Q&A search.
 
 ## What this does
@@ -29,16 +32,17 @@ http://127.0.0.1:5000
 ## Excel / CSV format
 Your file should have **at least two columns**:
 
-| Column A (Question) | Column B (Answer) |
-|---|---|
-| What is X? | X is ... |
-| How do I Y? | You can Y by ... |
+| Column A (Question) | Column B (Answer) | Column C (Elaboration) |
+|---|---|---|
+| What is X? | X is ... | Additional details... |
+| How do I Y? | You can Y by ... | Extra instructions... |
 
 - **Column A** = Question  
-- **Column B** = Answer  
+- **Column B** = Answer (or first part of answer)
+- **Column C** = Elaboration (optional - will be concatenated with Column B)
 - Extra columns are ignored.
 
-CSV is supported the same way (first two columns used).
+The answer field concatenates Columns B and C together, so each can have partial information or one can be empty.
 
 ## Upload steps
 1. Click upload in the web UI.

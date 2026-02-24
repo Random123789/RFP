@@ -20,10 +20,16 @@ skipped = 0
 
 for _, row in df.iterrows():
     question = row.iloc[0]
-    answer = row.iloc[1]
+    
+    # Concatenate columns 2 and 3 for answer (handling missing values)
+    col2 = str(row.iloc[1]) if not pd.isna(row.iloc[1]) else ""
+    col3 = str(row.iloc[2]) if len(row) > 2 and not pd.isna(row.iloc[2]) else ""
+    
+    # Combine them, removing extra whitespace
+    answer = (col2 + " " + col3).strip()
     
     # Skip empty rows
-    if pd.isna(question) or pd.isna(answer):
+    if pd.isna(question) or not answer:
         continue
     
     # Check if BOTH question AND answer already exist
